@@ -1,0 +1,20 @@
+[project]
+name = "scanner-clipper"
+version = "0.1.0"
+description = "Automatically detect, extract, and clean individual photos from batch scans."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "opencv-python>=4.8.0",
+    "numpy>=1.24.0",
+]
+
+[project.scripts]
+scanner-clipper = "scanner_clipper:main"
+
+[tool.setuptools]
+py-modules = ["scanner_clipper"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

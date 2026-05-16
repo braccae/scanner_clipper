@@ -2,3 +2,7 @@
 debug/
 input/
 output/
+*.egg-info/
+__pycache__/
+build/
+dist/

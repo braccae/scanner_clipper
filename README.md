@@ -17,16 +17,20 @@ This project uses `uv` for fast dependency management, but standard `pip` works 
 ### 1. Clone and Setup Environment
 
 ```bash
-# Create a virtual environment
+# Create a virtual environment and install in editable mode
 uv venv
-
-# Install dependencies
-uv pip install opencv-python numpy
+uv pip install -e .
 ```
 
 ## Usage
 
-Place your scans in an `input/` folder and run the script:
+You can run the script directly using the installed command:
+
+```bash
+scanner-clipper -i input/ -o output/
+```
+
+Or run the python file:
 
 ```bash
 python scanner_clipper.py -i input/ -o output/
