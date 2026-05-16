@@ -31,7 +31,8 @@ CONTOUR_APPROX_FACTOR = 0.02 # Contour approximation epsilon factor
 PADDING_PX = 0               # Padding around extracted photos (pixels)
 SHAVE_PX = 10                 # Pixels to shave off edges (to remove rounded corners)
 TRIM_THRESHOLD = 240         # Grayscale threshold for whitespace (0-255)
-OUTPUT_QUALITY = 95          # JPEG output quality (0-100)
+OUTPUT_QUALITY = 90          # Default output quality (0-100)
+OUTPUT_FORMAT = "webp"       # Default output format
 
 
 def order_points(pts: np.ndarray) -> np.ndarray:
@@ -289,7 +290,9 @@ def detect_photos(image_path: str, debug: bool = False, shave_px: int = SHAVE_PX
     return extracted
 
 
-def process_folder(input_dir: str, output_dir: str, debug: bool = False, shave_px: int = SHAVE_PX, threshold: int = TRIM_THRESHOLD) -> None:
+def process_folder(input_dir: str, output_dir: str, debug: bool = False, 
+                   shave_px: int = SHAVE_PX, threshold: int = TRIM_THRESHOLD,
+                   quality: int = OUTPUT_QUALITY, output_format: str = OUTPUT_FORMAT) -> None:
     """Process all images in the input directory."""
     input_path = Path(input_dir)
     output_path = Path(output_dir)
@@ -323,11 +326,27 @@ def process_folder(input_dir: str, output_dir: str, debug: bool = False, shave_p
             continue
 
         for i, photo in enumerate(photos, 1):
-            # Build output filename: originalname_photo_01.jpg
-            out_name = f"{img_file.stem}_photo_{i:02d}.jpg"
+            # Build output filename
+            ext = output_format.lower()
+            if not ext.startswith("."):
+                ext = f".{ext}"
+            
+            out_name = f"{img_file.stem}_photo_{i:02d}{ext}"
             out_path = output_path / out_name
 
-            cv2.imwrite(str(out_path), photo, [cv2.IMWRITE_JPEG_QUALITY, OUTPUT_QUALITY])
+            # Determine quality flags based on format
+            params = []
+            if ext == ".webp":
+                params = [cv2.IMWRITE_WEBP_QUALITY, quality]
+            elif ext in [".jpg", ".jpeg"]:
+                params = [cv2.IMWRITE_JPEG_QUALITY, quality]
+            elif ext == ".png":
+                # PNG compression is 0-9, where 0 is no compression and 9 is max
+                # Map 0-100 quality to 0-9 compression (inverted: high quality = low compression)
+                compression = 9 - int(quality / 11)
+                params = [cv2.IMWRITE_PNG_COMPRESSION, compression]
+
+            cv2.imwrite(str(out_path), photo, params)
             ph, pw = photo.shape[:2]
             print(f"  Saved: {out_name} ({pw}x{ph})")
             total_extracted += 1
@@ -375,6 +394,18 @@ Examples:
         default=TRIM_THRESHOLD,
         help=f"Grayscale threshold for whitespace trimming (default: {TRIM_THRESHOLD})"
     )
+    parser.add_argument(
+        "-q", "--quality",
+        type=int,
+        default=OUTPUT_QUALITY,
+        help=f"Output quality 0-100 (default: {OUTPUT_QUALITY})"
+    )
+    parser.add_argument(
+        "-f", "--format",
+        default=OUTPUT_FORMAT,
+        choices=["webp", "jpg", "png"],
+        help=f"Output format (default: {OUTPUT_FORMAT})"
+    )
 
     args = parser.parse_args()
 
@@ -397,7 +428,9 @@ Examples:
         str(output_dir),
         debug=args.debug,
         shave_px=args.shave,
-        threshold=args.threshold
+        threshold=args.threshold,
+        quality=args.quality,
+        output_format=args.format
     )
 
 

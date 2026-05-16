@@ -8,6 +8,7 @@ A robust Python utility to automatically detect, extract, and clean individual p
 - **Whitespace Trimming**: Uses morphological noise reduction to remove scanner bed artifacts and "dust" before cropping.
 - **Rounded Corner Support**: Adjustable "shaving" logic to eliminate the white slivers left behind by vintage physical prints.
 - **Configurable Thresholding**: Tune the sensitivity of whitespace detection for different scanner beds.
+- **WebP by Default**: Optimized for the web with configurable quality (defaults to WebP 90).
 - **Debug Mode**: Generates intermediate masks and contour overlays to help optimize parameters.
 
 ## Installation
@@ -24,7 +25,13 @@ uv pip install -e .
 
 ## Usage
 
-You can run the script directly using the installed command:
+You can run the script using `uv run` (recommended):
+
+```bash
+uv run scanner-clipper -i input/ -o output/
+```
+
+Or using the installed command directly (if your environment is activated):
 
 ```bash
 scanner-clipper -i input/ -o output/
@@ -42,6 +49,8 @@ python scanner_clipper.py -i input/ -o output/
 | :--- | :--- | :--- |
 | `-i`, `--input` | Path to directory containing raw scans. | `input/` |
 | `-o`, `--output` | Path to directory where extracted photos will be saved. | `output/` |
+| `-q`, `--quality` | Output quality (0-100). | `90` |
+| `-f`, `--format` | Output format (`webp`, `jpg`, `png`). | `webp` |
 | `--shave` | Number of pixels to shave from all edges of the final crop (helps with rounded corners). | `10` |
 | `--threshold` | Grayscale threshold for whitespace detection (0-255). Lower is more aggressive. | `240` |
 | `--debug` | Save diagnostic images to the `debug/` folder. | `False` |
@@ -56,6 +65,11 @@ python scanner_clipper.py -i input/ -o output/ --shave 15
 ### For "messy" scans with dust or dark scanner beds:
 ```bash
 python scanner_clipper.py -i input/ -o output/ --threshold 220
+```
+
+### To output high-quality JPEGs instead of WebP:
+```bash
+python scanner_clipper.py -f jpg -q 95
 ```
 
 ### Visual Troubleshooting:
