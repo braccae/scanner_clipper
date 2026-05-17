@@ -9,7 +9,10 @@ separate file in the output folder.
 
 import argparse
 import os
+import shutil
 import sys
+import tempfile
+import zipfile
 from pathlib import Path
 
 import cv2
@@ -290,29 +293,17 @@ def detect_photos(image_path: str, debug: bool = False, shave_px: int = SHAVE_PX
     return extracted
 
 
-def process_folder(input_dir: str, output_dir: str, debug: bool = False, 
-                   shave_px: int = SHAVE_PX, threshold: int = TRIM_THRESHOLD,
-                   quality: int = OUTPUT_QUALITY, output_format: str = OUTPUT_FORMAT) -> None:
-    """Process all images in the input directory."""
-    input_path = Path(input_dir)
-    output_path = Path(output_dir)
+def process_images(image_files: list[Path], output_path: Path, prefix: str = None,
+                   debug: bool = False, shave_px: int = SHAVE_PX, 
+                   threshold: int = TRIM_THRESHOLD, quality: int = OUTPUT_QUALITY, 
+                   output_format: str = OUTPUT_FORMAT) -> int:
+    """
+    Process a list of image files and save results to output_path.
+    
+    If prefix is provided, output files will be named sequentially: {prefix}_{count:03d}.ext
+    Otherwise, they use the source filename: {img_file.stem}_photo_{i:02d}.ext
+    """
     output_path.mkdir(parents=True, exist_ok=True)
-
-    # Find all image files
-    image_files = sorted([
-        f for f in input_path.iterdir()
-        if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS
-    ])
-
-    if not image_files:
-        print(f"No images found in {input_dir}")
-        print(f"Supported formats: {', '.join(IMAGE_EXTENSIONS)}")
-        return
-
-    print(f"Found {len(image_files)} image(s) in {input_dir}")
-    print(f"Output directory: {output_dir}")
-    print("=" * 60)
-
     total_extracted = 0
 
     for img_file in image_files:
@@ -331,7 +322,11 @@ def process_folder(input_dir: str, output_dir: str, debug: bool = False,
             if not ext.startswith("."):
                 ext = f".{ext}"
             
-            out_name = f"{img_file.stem}_photo_{i:02d}{ext}"
+            if prefix:
+                out_name = f"{prefix}_{total_extracted + 1:03d}{ext}"
+            else:
+                out_name = f"{img_file.stem}_photo_{i:02d}{ext}"
+            
             out_path = output_path / out_name
 
             # Determine quality flags based on format
@@ -341,8 +336,6 @@ def process_folder(input_dir: str, output_dir: str, debug: bool = False,
             elif ext in [".jpg", ".jpeg"]:
                 params = [cv2.IMWRITE_JPEG_QUALITY, quality]
             elif ext == ".png":
-                # PNG compression is 0-9, where 0 is no compression and 9 is max
-                # Map 0-100 quality to 0-9 compression (inverted: high quality = low compression)
                 compression = 9 - int(quality / 11)
                 params = [cv2.IMWRITE_PNG_COMPRESSION, compression]
 
@@ -350,9 +343,87 @@ def process_folder(input_dir: str, output_dir: str, debug: bool = False,
             ph, pw = photo.shape[:2]
             print(f"  Saved: {out_name} ({pw}x{ph})")
             total_extracted += 1
+            
+    return total_extracted
+
+
+def process_folder(input_dir: str, output_dir: str, debug: bool = False, 
+                   shave_px: int = SHAVE_PX, threshold: int = TRIM_THRESHOLD,
+                   quality: int = OUTPUT_QUALITY, output_format: str = OUTPUT_FORMAT) -> None:
+    """Process all images and zip files in the input directory."""
+    input_path = Path(input_dir)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Find all image files in the top level
+    image_files = sorted([
+        f for f in input_path.iterdir()
+        if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS
+    ])
+
+    # Find all zip files
+    zip_files = sorted([
+        f for f in input_path.iterdir()
+        if f.is_file() and f.suffix.lower() == ".zip"
+    ])
+
+    if not image_files and not zip_files:
+        print(f"No images or zip files found in {input_dir}")
+        print(f"Supported formats: {', '.join(IMAGE_EXTENSIONS)}, .zip")
+        return
+
+    print(f"Found {len(image_files)} image(s) and {len(zip_files)} zip file(s) in {input_dir}")
+    print(f"Output directory: {output_dir}")
+    print("=" * 60)
+
+    total_extracted = 0
+
+    # Process standalone images
+    if image_files:
+        print(f"Processing {len(image_files)} standalone images...")
+        total_extracted += process_images(image_files, output_path, None, debug, shave_px, threshold, quality, output_format)
+
+    # Process zip files
+    for zip_file in zip_files:
+        print(f"\nDelving into ZIP: {zip_file.name}")
+        print("=" * 60)
+        
+        # Create a subdirectory for the zip's contents
+        zip_output_path = output_path / zip_file.stem
+        
+        # Create a temporary directory to extract the zip
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            
+            with zipfile.ZipFile(zip_file, 'r') as z:
+                # Extract only image files, ignoring folder structure if any
+                for i, member in enumerate(z.infolist()):
+                    if member.is_dir():
+                        continue
+                    
+                    filename = Path(member.filename).name
+                    if Path(filename).suffix.lower() in IMAGE_EXTENSIONS:
+                        # Use a counter to avoid collisions in the flat temp directory
+                        target_file = temp_path / f"scan_{i:04d}_{filename}"
+                        with z.open(member) as source, open(target_file, "wb") as target:
+                            shutil.copyfileobj(source, target)
+            
+            # Find all extracted images
+            extracted_images = sorted([
+                f for f in temp_path.iterdir()
+                if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS
+            ])
+            
+            if extracted_images:
+                print(f"Found {len(extracted_images)} image(s) in {zip_file.name}")
+                # Use the zip filename (stem) as prefix to disregard internal filenames
+                total_extracted += process_images(extracted_images, zip_output_path, zip_file.stem, 
+                                                 debug, shave_px, threshold, quality, output_format)
+            else:
+                print(f"No supported images found in {zip_file.name}")
 
     print("\n" + "=" * 60)
-    print(f"Done! Extracted {total_extracted} photo(s) from {len(image_files)} scan(s)")
+    print(f"Done! Total extracted {total_extracted} photo(s)")
 
 
 def main():
