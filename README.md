@@ -78,6 +78,20 @@ If photos aren't being detected correctly, use the debug flag to see the masks b
 python scanner_clipper.py -i input/ -o output/ --debug
 ```
 
+## Testing
+
+You can run the test suite locally to verify the script is working correctly:
+
+```bash
+uv run python3 -m unittest test_scanner_clipper.py
+```
+
+The test suite covers:
+- Core coordinate ordering and image perspective transformation.
+- Standalone image detection and extraction.
+- Nested ZIP file scanning and processing.
+- End-to-end command line execution and interface arguments.
+
 ## Requirements
 
 - Python 3.8+
