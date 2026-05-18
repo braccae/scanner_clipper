@@ -40,14 +40,24 @@ OUTPUT_FORMAT = "webp"       # Default output format
 
 def order_points(pts: np.ndarray) -> np.ndarray:
     """Order 4 points as: top-left, top-right, bottom-right, bottom-left."""
-    rect = np.zeros((4, 2), dtype="float32")
-    s = pts.sum(axis=1)
-    rect[0] = pts[np.argmin(s)]   # top-left has smallest sum
-    rect[2] = pts[np.argmax(s)]   # bottom-right has largest sum
-    d = np.diff(pts, axis=1)
-    rect[1] = pts[np.argmin(d)]   # top-right has smallest difference
-    rect[3] = pts[np.argmax(d)]   # bottom-left has largest difference
-    return rect
+    # Sort the points based on their x-coordinates
+    xSorted = pts[np.argsort(pts[:, 0]), :]
+
+    # Grab the left-most and right-most points from the sorted x-coordinate points
+    leftMost = xSorted[:2, :]
+    rightMost = xSorted[2:, :]
+
+    # Sort the left-most coordinates according to their y-coordinates 
+    # to grab the top-left and bottom-left points, respectively
+    leftMost = leftMost[np.argsort(leftMost[:, 1]), :]
+    (tl, bl) = leftMost
+
+    # Calculate the Euclidean distance between the top-left and right-most points;
+    # the point with the largest distance will be our bottom-right point
+    D = np.linalg.norm(rightMost - tl, axis=1)
+    (br, tr) = rightMost[np.argsort(D)[::-1], :]
+
+    return np.array([tl, tr, br, bl], dtype="float32")
 
 
 def four_point_transform(image: np.ndarray, pts: np.ndarray) -> np.ndarray:
