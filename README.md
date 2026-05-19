@@ -94,6 +94,6 @@ The test suite covers:
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.9+
 - OpenCV (`opencv-python`)
 - NumPy
