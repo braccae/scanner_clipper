@@ -16,5 +16,5 @@ scanner-clipper = "scanner_clipper:main"
 py-modules = ["scanner_clipper"]
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=82.0.1"]
 build-backend = "setuptools.build_meta"
