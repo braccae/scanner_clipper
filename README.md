@@ -25,25 +25,35 @@ uv pip install -e .
 
 ## Usage
 
-You can run the script using `uv run` (recommended):
+You can run the scripts using `uv run` (recommended):
 
+### 1. Extract Photos from Scans
 ```bash
 uv run scanner-clipper -i input/ -o output/
 ```
 
 Or using the installed command directly (if your environment is activated):
-
 ```bash
 scanner-clipper -i input/ -o output/
 ```
 
 Or run the python file:
-
 ```bash
 python scanner_clipper.py -i input/ -o output/
 ```
 
-### Command Line Arguments
+### 2. Downsize and Convert for Digital Frame
+To downsize the extracted images and convert them to JPEG (ideal for digital picture frames):
+```bash
+uv run image-resizer -i output/ -o downsized/
+```
+
+Or run the python file:
+```bash
+python image_resizer.py -i output/ -o downsized/
+```
+
+### Command Line Arguments (scanner-clipper)
 
 | Argument | Description | Default |
 | :--- | :--- | :--- |
@@ -55,11 +65,38 @@ python scanner_clipper.py -i input/ -o output/
 | `--threshold` | Grayscale threshold for whitespace detection (0-255). Lower is more aggressive. | `240` |
 | `--debug` | Save diagnostic images to the `debug/` folder. | `False` |
 
+### Command Line Arguments (image-resizer)
+
+| Argument | Description | Default |
+| :--- | :--- | :--- |
+| `-i`, `--input` | Path to directory containing images to downsize. | `output/` |
+| `-o`, `--output` | Path to directory where downsized images will be saved. | `downsized/` |
+| `-s`, `--scale` | Scaling factor (e.g. `0.5` for half size, `0.33` for one-third size). Mutually exclusive with `--max-dim`. | `0.5` |
+| `--max-dim` | Scale down so the larger side is at most this many pixels. Mutually exclusive with `--scale`. | *None* |
+| `-q`, `--quality` | Output JPEG quality (0-100). | `90` |
+| `-f`, `--format` | Output format (`jpg`, `jpeg`, `webp`, `png`). | `jpg` |
+| `--no-recursive` | Skip recursive traversal of the input directory. | *False (runs recursively)* |
+
 ## Optimized Examples
 
 ### For standard vintage photos with rounded corners:
 ```bash
 python scanner_clipper.py -i input/ -o output/ --shave 15
+```
+
+### For downsizing images by 2/3 (making them 1/3 scale, i.e., 33%):
+```bash
+python image_resizer.py -i output/ -o downsized/ -s 0.33
+```
+
+### For downsizing images by a half (making them 50% scale):
+```bash
+python image_resizer.py -i output/ -o downsized/ -s 0.5
+```
+
+### For resizing images to fit a 1080p digital photo frame (max 1920px width/height):
+```bash
+python image_resizer.py -i output/ -o downsized/ --max-dim 1920
 ```
 
 ### For "messy" scans with dust or dark scanner beds:

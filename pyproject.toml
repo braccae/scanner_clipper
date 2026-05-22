@@ -11,9 +11,10 @@ dependencies = [
 
 [project.scripts]
 scanner-clipper = "scanner_clipper:main"
+image-resizer = "image_resizer:main"
 
 [tool.setuptools]
-py-modules = ["scanner_clipper"]
+py-modules = ["scanner_clipper", "image_resizer"]
 
 [build-system]
 requires = ["setuptools>=82.0.1"]
