@@ -30,14 +30,50 @@ TASKS_LOCK = threading.Lock()
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".webp", ".png", ".tif", ".tiff"}
 
 
-def run_process_reader(process, task_queue, task_id):
-    """Reads subprocess output line-by-line and pushes it into the SSE queue."""
-    for line in iter(process.stdout.readline, ''):
-        task_queue.put(line.rstrip('\r\n'))
+class QueueStream:
+    def __init__(self, task_queue):
+        self.task_queue = task_queue
+        self.buffer = ""
+
+    def write(self, text):
+        self.buffer += text
+        while "\n" in self.buffer:
+            line, self.buffer = self.buffer.split("\n", 1)
+            self.task_queue.put(line.rstrip('\r\n'))
+
+    def flush(self):
+        if self.buffer:
+            self.task_queue.put(self.buffer.rstrip('\r\n'))
+            self.buffer = ""
+
+
+def run_in_process_thread(module, args_list, task_queue, task_id):
+    """Executes a tool's main() function inside the same process with captured streams."""
+    q_stream = QueueStream(task_queue)
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = q_stream
+    sys.stderr = q_stream
     
-    process.stdout.close()
-    return_code = process.wait()
-    
+    old_argv = sys.argv
+    sys.argv = [f"{module.__name__}.py"] + args_list
+
+    try:
+        module.main()
+        q_stream.flush()
+        return_code = 0
+    except SystemExit as se:
+        q_stream.flush()
+        return_code = se.code if isinstance(se.code, int) else 0
+    except Exception as e:
+        q_stream.flush()
+        task_queue.put(f"  ERROR: In-process execution crashed: {e}")
+        return_code = 1
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        sys.argv = old_argv
+
     with TASKS_LOCK:
         if task_id in TASKS:
             TASKS[task_id]['status'] = 'success' if return_code == 0 else 'error'
@@ -292,8 +328,27 @@ class DashboardRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"error": f"Invalid JSON payload: {e}"}, 400)
                 return
 
-            # Construct arguments based on tool name
-            args = []
+            import importlib
+            
+            tool_map = {
+                "clipper": "scanner_clipper",
+                "resizer": "image_resizer",
+                "exif": "exif_date_editor"
+            }
+            
+            if tool_name not in tool_map:
+                self.send_json({"error": "Unknown tool specified"}, 400)
+                return
+
+            module_name = tool_map[tool_name]
+            try:
+                module = importlib.import_module(module_name)
+            except Exception as e:
+                self.send_json({"error": f"Failed to import tool module '{module_name}': {e}"}, 500)
+                return
+
+            # Construct arguments list matching mocked sys.argv command line flags
+            args_list = []
             
             if tool_name == "clipper":
                 inp = params.get("input", "input")
@@ -303,9 +358,9 @@ class DashboardRequestHandler(http.server.BaseHTTPRequestHandler):
                 fmt = params.get("format", "webp")
                 quality = str(params.get("quality", 90))
                 
-                args = [sys.executable, "scanner_clipper.py", "-i", inp, "-o", out, "--shave", shave, "--threshold", threshold, "-f", fmt, "-q", quality]
+                args_list = ["-i", inp, "-o", out, "--shave", shave, "--threshold", threshold, "-f", fmt, "-q", quality]
                 if params.get("debug"):
-                    args.append("--debug")
+                    args_list.append("--debug")
 
             elif tool_name == "resizer":
                 inp = params.get("input", "output")
@@ -313,67 +368,55 @@ class DashboardRequestHandler(http.server.BaseHTTPRequestHandler):
                 fmt = params.get("format", "jpg")
                 quality = str(params.get("quality", 90))
                 
-                args = [sys.executable, "image_resizer.py", "-i", inp, "-o", out, "-f", fmt, "-q", quality]
+                args_list = ["-i", inp, "-o", out, "-f", fmt, "-q", quality]
                 
                 if "scale" in params:
-                    args.extend(["-s", str(params["scale"])])
+                    args_list.extend(["-s", str(params["scale"])])
                 elif "max_dim" in params:
-                    args.extend(["--max-dim", str(params["max_dim"])])
+                    args_list.extend(["--max-dim", str(params["max_dim"])])
 
                 if not params.get("recursive", True):
-                    args.append("--no-recursive")
+                    args_list.append("--no-recursive")
 
             elif tool_name == "exif":
                 inp = params.get("input", "output")
                 quality = str(params.get("quality", 95))
                 increment = str(params.get("increment", 60))
                 
-                args = [sys.executable, "exif_date_editor.py", "-i", inp, "-q", quality, "--increment", increment]
+                args_list = ["-i", inp, "-q", quality, "--increment", increment]
                 
                 if params.get("output"):
-                    args.extend(["-o", params["output"]])
+                    args_list.extend(["-o", params["output"]])
                 if params.get("date"):
-                    args.extend(["-d", params["date"]])
+                    args_list.extend(["-d", params["date"]])
                 if params.get("random_time"):
-                    args.append("--random-time")
+                    args_list.append("--random-time")
                 if params.get("dry_run"):
-                    args.append("--dry-run")
+                    args_list.append("--dry-run")
                 if params.get("no_recursive"):
-                    args.append("--no-recursive")
-
-            else:
-                self.send_json({"error": "Unknown tool specified"}, 400)
-                return
+                    args_list.append("--no-recursive")
 
             try:
-                # Trigger process execution in background thread
-                process = subprocess.Popen(
-                    args,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                    cwd=str(WORKSPACE_DIR)
-                )
-                
                 task_id = str(uuid.uuid4())
                 task_queue = queue.Queue()
                 
                 with TASKS_LOCK:
                     TASKS[task_id] = {
-                        "process": process,
                         "queue": task_queue,
                         "status": "running"
                     }
                 
-                # Start logging output reader thread
-                thread = threading.Thread(target=run_process_reader, args=(process, task_queue, task_id))
+                # Start logging output in-process thread execution
+                thread = threading.Thread(
+                    target=run_in_process_thread,
+                    args=(module, args_list, task_queue, task_id)
+                )
                 thread.daemon = True
                 thread.start()
 
                 self.send_json({"task_id": task_id})
             except Exception as e:
-                self.send_json({"error": f"Failed to execute process: {e}"}, 500)
+                self.send_json({"error": f"Failed to start execution thread: {e}"}, 500)
             return
 
         self.send_error(404, "Endpoint not found")

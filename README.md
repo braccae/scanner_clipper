@@ -101,6 +101,51 @@ python desktop_app.py
 ```
 This spawns a standalone window wrapping your dark-mode utilities dashboard.
 
+### 6. Compiling into Standalone Native Binaries
+To compile this entire project (Python code, static frontend templates, and dependency modules) into a **single, fully self-contained native executable** that can run on other machines without needing Python or libraries pre-installed:
+
+1. Install `pyinstaller` and GUI bindings:
+```bash
+pip install pyinstaller pywebview PyQt6
+```
+
+2. Run the compiler command:
+On Linux/macOS:
+```bash
+pyinstaller --onefile --windowed --add-data "index.html:." --name "PhotoUtils" desktop_app.py
+```
+
+On Windows:
+```bash
+pyinstaller --onefile --windowed --add-data "index.html;." --name "PhotoUtils" desktop_app.py
+```
+
+This generates a standalone native executable inside the `dist/` folder:
+- **Linux**: `dist/PhotoUtils` (ELF binary)
+- **Windows**: `dist/PhotoUtils.exe` (PE binary)
+- **macOS**: `dist/PhotoUtils` (Mach-O binary) or `dist/PhotoUtils.app` (App bundle)
+
+### 7. Automated Releases via GitHub Actions
+A production-ready continuous integration (CI) workflow is configured at `.github/workflows/release.yml` to compile and distribute these native binaries automatically across multiple platforms.
+
+#### To Trigger an Automated Cross-Platform Release:
+1. Commit your changes and push a version tag (e.g. `v1.0.0`) to your repository:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+2. **GitHub Actions** will automatically spawn:
+   - A **Linux** runner to build `PhotoUtils-Linux` (Otsu/OpenCV headless dependencies pre-installed).
+   - A **Windows** runner to build `PhotoUtils-Windows.exe` (packages standalone assemblies).
+   - A **macOS** runner to build and zip your native `PhotoUtils-macOS.app` bundle.
+
+3. Once built successfully, it automatically creates a new **GitHub Release** and uploads all three native binaries as downloadable assets.
+
+*(Note: You can also manually trigger builds at any time without creating a tag by clicking the **"Run workflow"** button in the Actions tab of your GitHub repository).*
+
+
+
 
 
 
