@@ -11,8 +11,7 @@ A robust Python utility to automatically detect, extract, and clean individual p
 - **WebP by Default**: Optimized for the web with configurable quality (defaults to WebP 90).
 - **Debug Mode**: Generates intermediate masks and contour overlays to help optimize parameters.
 - **EXIF Date Editing**: Bulk update 'Date Taken' tags in JPEGs, WebPs, and PNGs either in-place or copied to an output folder. Supports sequential increments and interactive folder walkthroughs.
-- **Interactive Web Dashboard**: A zero-dependency visual interface to run all tools, explore local directories, stream active logs in real-time, and walk through photo albums with visual image previews.
-- **Native Desktop App Wrapper**: Wrap the dashboard instantly into a native desktop window frame via a lightweight webview utility.
+- **Interactive Desktop Dashboard**: A beautiful, native dark-themed graphical interface to run all tools, explore local directories, stream background logs in real-time, and sequentially date folders with interactive image previews.
 
 
 
@@ -70,8 +69,8 @@ Or run in-place on a specific folder with a specified date:
 uv run exif-date-editor -i output/summer_1995/ -d "August 1995"
 ```
 
-### 4. Interactive Web Dashboard
-To start the dark-mode graphical user interface in your browser:
+### 4. Interactive Desktop Dashboard
+To start the native dark-mode graphical user interface dashboard:
 ```bash
 uv run photo-dashboard
 ```
@@ -80,44 +79,19 @@ Or run the python file directly:
 ```bash
 python gui.py
 ```
-This launches a local web server at `http://localhost:8081` and opens it in your default browser automatically. It features a complete UI for the scanner clipper, resizer, bulk EXIF editor, and the visual interactive walkthrough.
+This launches a standalone native desktop dashboard. It features a complete graphical interface for the scanner clipper, resizer, bulk EXIF editor, and the visual interactive walkthrough.
 
-### 5. Native Desktop Application
-You can also run this application in a dedicated standalone native desktop window using `pywebview` (which uses your OS's native rendering engine instead of bundling a heavy browser instance):
+### 5. Compiling into Standalone Native Binaries
+To compile this entire project (Python code and dependency modules) into a **single, fully self-contained native executable** that can run on other machines without needing Python or libraries pre-installed:
 
-1. Install `pywebview`:
+1. Install `pyinstaller`:
 ```bash
-pip install pywebview
-```
-
-2. Start the native application wrapper:
-```bash
-uv run photo-desktop
-```
-
-Or run the python file directly:
-```bash
-python desktop_app.py
-```
-This spawns a standalone window wrapping your dark-mode utilities dashboard.
-
-### 6. Compiling into Standalone Native Binaries
-To compile this entire project (Python code, static frontend templates, and dependency modules) into a **single, fully self-contained native executable** that can run on other machines without needing Python or libraries pre-installed:
-
-1. Install `pyinstaller` and GUI bindings:
-```bash
-pip install pyinstaller pywebview PyQt6
+pip install pyinstaller
 ```
 
 2. Run the compiler command:
-On Linux/macOS:
 ```bash
-pyinstaller --onefile --windowed --add-data "index.html:." --name "PhotoUtils" desktop_app.py
-```
-
-On Windows:
-```bash
-pyinstaller --onefile --windowed --add-data "index.html;." --name "PhotoUtils" desktop_app.py
+pyinstaller --onefile --windowed --name "PhotoUtils" desktop_app.py
 ```
 
 This generates a standalone native executable inside the `dist/` folder:

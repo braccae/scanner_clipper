@@ -43,17 +43,11 @@ jobs:
       - name: Install Python dependencies
         run: |
           uv pip install .
-          uv pip install pyinstaller pywebview PyQt6 PyQt6-WebEngine
+          uv pip install pyinstaller
 
-      - name: Build Standalone Executable (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Build Standalone Executable
         run: |
-          uv run pyinstaller --onefile --windowed --add-data "index.html;." --name "${{ matrix.artifact-name }}" desktop_app.py
-
-      - name: Build Standalone Executable (Linux / macOS)
-        if: matrix.os != 'windows-latest'
-        run: |
-          uv run pyinstaller --onefile --windowed --add-data "index.html:." --name "${{ matrix.artifact-name }}" desktop_app.py
+          uv run pyinstaller --onefile --windowed --name "${{ matrix.artifact-name }}" desktop_app.py
 
       - name: Package macOS App Bundle (macOS)
         if: matrix.os == 'macos-latest'
