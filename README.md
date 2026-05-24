@@ -10,6 +10,8 @@ A robust Python utility to automatically detect, extract, and clean individual p
 - **Configurable Thresholding**: Tune the sensitivity of whitespace detection for different scanner beds.
 - **WebP by Default**: Optimized for the web with configurable quality (defaults to WebP 90).
 - **Debug Mode**: Generates intermediate masks and contour overlays to help optimize parameters.
+- **EXIF Date Editing**: Bulk update 'Date Taken' tags in JPEGs, WebPs, and PNGs either in-place or copied to an output folder. Supports sequential increments and interactive folder walkthroughs.
+
 
 ## Installation
 
@@ -53,6 +55,18 @@ Or run the python file:
 python image_resizer.py -i output/ -o downsized/
 ```
 
+### 3. Bulk Edit and Date EXIF Metadata
+To update the EXIF 'date taken' tags across scanned albums:
+```bash
+uv run exif-date-editor -i output/
+```
+
+Or run in-place on a specific folder with a specified date:
+```bash
+uv run exif-date-editor -i output/summer_1995/ -d "August 1995"
+```
+
+
 ### Command Line Arguments (scanner-clipper)
 
 | Argument | Description | Default |
@@ -76,6 +90,21 @@ python image_resizer.py -i output/ -o downsized/
 | `-q`, `--quality` | Output JPEG quality (0-100). | `90` |
 | `-f`, `--format` | Output format (`jpg`, `jpeg`, `webp`, `png`). | `jpg` |
 | `--no-recursive` | Skip recursive traversal of the input directory. | *False (runs recursively)* |
+
+### Command Line Arguments (exif-date-editor)
+
+| Argument | Description | Default |
+| :--- | :--- | :--- |
+| `-i`, `--input` | Path to directory containing images, or path to a single image. | *Required* |
+| `-o`, `--output` | Path to directory where modified images will be saved. | *Same as input (updates in-place)* |
+| `-d`, `--date` | Date to apply (e.g. `1995-08-15`, `1995-08`, `1995`, `August 1995`). | *None (triggers interactive walk)* |
+| `--interactive` | Force Interactive Walkthrough mode even if a date is specified. | `False` |
+| `--no-recursive` | Do not traverse directories recursively. | `False` |
+| `--increment` | Time increment in seconds between sequential photos. | `60` |
+| `--random-time` | Randomize the starting time of day (between 9:00 AM and 5:00 PM). | `False` |
+| `-q`, `--quality` | Saving quality (0-100) for JPEGs/WebPs. | `95` |
+| `--dry-run` | Simulate operations without writing to disk. | `False` |
+| `--verbose` | Print detailed logs for every updated file. | `False` |
 
 ## Optimized Examples
 
@@ -115,18 +144,32 @@ If photos aren't being detected correctly, use the debug flag to see the masks b
 python scanner_clipper.py -i input/ -o output/ --debug
 ```
 
+### For batch dating vintage scanned photos interactively:
+```bash
+python exif_date_editor.py -i output/ --random-time --increment 60
+```
+
+### For non-interactive dating of a single folder to a year/month:
+```bash
+python exif_date_editor.py -i output/album_1993/ -d "1993-06" --increment 30
+```
+
 ## Testing
 
 You can run the test suite locally to verify the script is working correctly:
 
 ```bash
 uv run python3 -m unittest test_scanner_clipper.py
+uv run python3 -m unittest test_image_resizer.py
+uv run python3 -m unittest test_exif_date_editor.py
 ```
 
 The test suite covers:
 - Core coordinate ordering and image perspective transformation.
 - Standalone image detection and extraction.
 - Nested ZIP file scanning and processing.
+- Image downscaling and file type conversion.
+- EXIF metadata date manipulation, folder sequence increments, and robust date string parsing.
 - End-to-end command line execution and interface arguments.
 
 ## Requirements
@@ -134,3 +177,5 @@ The test suite covers:
 - Python 3.9+
 - OpenCV (`opencv-python`)
 - NumPy
+- Pillow
+
