@@ -1,0 +1,110 @@
+name: Compile and Release Native Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on tag pushes matching v*, e.g., v1.0.0
+  workflow_dispatch: # Allow manual triggers from the GitHub Actions tab
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os-name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os-name: Linux
+            artifact-name: PhotoUtils-Linux
+          - os: windows-latest
+            os-name: Windows
+            artifact-name: PhotoUtils-Windows.exe
+          - os: macos-latest
+            os-name: macOS
+            artifact-name: PhotoUtils-macOS
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install system dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libglx-mesa0 libglib2.0-0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.12' # Use a highly stable Python version for PyInstaller compatibility
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install .
+          uv pip install pyinstaller pywebview PyQt6 PyQt6-WebEngine
+
+      - name: Build Standalone Executable (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          uv run pyinstaller --onefile --windowed --add-data "index.html;." --name "${{ matrix.artifact-name }}" desktop_app.py
+
+      - name: Build Standalone Executable (Linux / macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          uv run pyinstaller --onefile --windowed --add-data "index.html:." --name "${{ matrix.artifact-name }}" desktop_app.py
+
+      - name: Package macOS App Bundle (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd dist
+          zip -r ../PhotoUtils-macOS.zip "${{ matrix.artifact-name }}.app"
+          cd ..
+
+      - name: Upload Build Artifacts (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os-name }}-binary
+          path: PhotoUtils-macOS.zip
+
+      - name: Upload Build Artifacts (Linux / Windows)
+        if: matrix.os != 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os-name }}-binary
+          path: dist/${{ matrix.artifact-name }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') # Only run on tag pushes
+    permissions:
+      contents: write # Required to create releases and upload assets
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Restructure artifacts for upload
+        run: |
+          mkdir dist
+          # Move artifacts to flat dist folder
+          find artifacts -type f -name "PhotoUtils-*" -exec cp {} dist/ \;
+          find artifacts -type f -name "PhotoUtils-macOS.zip" -exec cp {} dist/ \;
+          ls -la dist/
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
