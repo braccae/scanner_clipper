@@ -32,7 +32,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1 libglx-mesa0 libglib2.0-0
+          sudo apt-get install -y libgl1 libglx-mesa0 libglib2.0-0 python3-tk
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
