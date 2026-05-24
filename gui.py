@@ -18,7 +18,7 @@ import urllib.parse
 import webbrowser
 from pathlib import Path
 
-PORT = 8081
+PORT = 38500
 WORKSPACE_DIR = Path(__file__).parent.resolve()
 
 # Global dictionary to track active background tasks and output streams
