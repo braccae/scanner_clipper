@@ -11,6 +11,10 @@ A robust Python utility to automatically detect, extract, and clean individual p
 - **WebP by Default**: Optimized for the web with configurable quality (defaults to WebP 90).
 - **Debug Mode**: Generates intermediate masks and contour overlays to help optimize parameters.
 - **EXIF Date Editing**: Bulk update 'Date Taken' tags in JPEGs, WebPs, and PNGs either in-place or copied to an output folder. Supports sequential increments and interactive folder walkthroughs.
+- **Interactive Web Dashboard**: A zero-dependency visual interface to run all tools, explore local directories, stream active logs in real-time, and walk through photo albums with visual image previews.
+- **Native Desktop App Wrapper**: Wrap the dashboard instantly into a native desktop window frame via a lightweight webview utility.
+
+
 
 
 ## Installation
@@ -65,6 +69,39 @@ Or run in-place on a specific folder with a specified date:
 ```bash
 uv run exif-date-editor -i output/summer_1995/ -d "August 1995"
 ```
+
+### 4. Interactive Web Dashboard
+To start the dark-mode graphical user interface in your browser:
+```bash
+uv run photo-dashboard
+```
+
+Or run the python file directly:
+```bash
+python gui.py
+```
+This launches a local web server at `http://localhost:8081` and opens it in your default browser automatically. It features a complete UI for the scanner clipper, resizer, bulk EXIF editor, and the visual interactive walkthrough.
+
+### 5. Native Desktop Application
+You can also run this application in a dedicated standalone native desktop window using `pywebview` (which uses your OS's native rendering engine instead of bundling a heavy browser instance):
+
+1. Install `pywebview`:
+```bash
+pip install pywebview
+```
+
+2. Start the native application wrapper:
+```bash
+uv run photo-desktop
+```
+
+Or run the python file directly:
+```bash
+python desktop_app.py
+```
+This spawns a standalone window wrapping your dark-mode utilities dashboard.
+
+
 
 
 ### Command Line Arguments (scanner-clipper)

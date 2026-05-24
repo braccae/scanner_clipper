@@ -7,18 +7,24 @@ requires-python = ">=3.9"
 dependencies = [
     "opencv-python>=4.8.0",
     "numpy>=1.24.0",
-    "pillow>=9.0.0",
+    "pywebview>=6.2.1",
+    "qtpy>=2.4.3",
+    "pyqt6>=6.10.2",
 ]
 
 [project.scripts]
 scanner-clipper = "scanner_clipper:main"
 image-resizer = "image_resizer:main"
 exif-date-editor = "exif_date_editor:main"
+photo-dashboard = "gui:main"
+photo-desktop = "desktop_app:main"
 
 [tool.setuptools]
-py-modules = ["scanner_clipper", "image_resizer", "exif_date_editor"]
+py-modules = ["scanner_clipper", "image_resizer", "exif_date_editor", "gui", "desktop_app"]
 
 [build-system]
 requires = ["setuptools>=82.0.1"]
 build-backend = "setuptools.build_meta"
+
+
 

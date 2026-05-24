@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Scanning Utilities Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --panel-bg: rgba(22, 25, 41, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #f1f1f5;
+            --text-muted: #8a8e9b;
+            --primary: #00f2fe;
+            --primary-glow: rgba(0, 242, 254, 0.2);
+            --accent: #4facfe;
+            --success: #00e676;
+            --error: #ff1744;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(22, 25, 41, 0.5) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 242, 254, 0.05) 0px, transparent 50%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: rgba(15, 17, 26, 0.95);
+            border-right: 1px border var(--border-color);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+            color: #fff;
+            padding-left: 8px;
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        .nav-item.active {
+            color: #fff;
+            background-color: rgba(0, 242, 254, 0.1);
+            border-left: 3px solid var(--primary);
+            box-shadow: inset 5px 0 10px rgba(0, 242, 254, 0.05);
+        }
+
+        /* Main Content Container */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        header {
+            margin-bottom: 8px;
+        }
+
+        header h1 {
+            font-weight: 600;
+            font-size: 1.8rem;
+            color: #fff;
+        }
+
+        header p {
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-size: 0.95rem;
+        }
+
+        /* Panel Glassmorphism */
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 4px;
+        }
+
+        /* Forms Layout */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"], input[type="number"], select {
+            flex: 1;
+            background-color: rgba(10, 10, 15, 0.6);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            color: #0f111a;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 242, 254, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00c853, var(--success));
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3);
+        }
+
+        /* Directory Explorer Modal / Drawer */
+        .explorer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .explorer-modal {
+            background: #141622;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .explorer-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .explorer-header h3 {
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        .explorer-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .explorer-path {
+            background: rgba(0,0,0,0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--primary);
+            word-break: break-all;
+        }
+
+        .explorer-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .explorer-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .explorer-item:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .explorer-item.directory {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .explorer-item.file {
+            color: var(--text-muted);
+        }
+
+        .explorer-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Checkbox & Switch Styles */
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-color);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: rgba(10, 10, 15, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked::after {
+            content: "✓";
+            color: #0f111a;
+            font-size: 0.75rem;
+            font-weight: 900;
+        }
+
+        /* Terminal Window */
+        .console-panel {
+            background: #090a0f;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            flex: 1;
+            min-height: 250px;
+            max-height: 450px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .console-header {
+            background: #11131e;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .console-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .console-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        .console-dot.idle {
+            background: var(--text-muted);
+            box-shadow: none;
+        }
+
+        .console-body {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #a2a8b9;
+            background-color: #06070a;
+            white-space: pre-wrap;
+        }
+
+        .log-error { color: var(--error); }
+        .log-success { color: var(--success); }
+        .log-info { color: var(--accent); }
+
+        /* Tabs Content Management */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* EXIF Interactive UI */
+        .exif-interactive-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            max-height: 380px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px dashed var(--border-color);
+        }
+
+        .preview-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            aspect-ratio: 1;
+        }
+
+        .preview-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .interactive-sidebar {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            justify-content: space-between;
+        }
+
+        .interactive-details {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .interactive-details h4 {
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .interactive-details p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .interactive-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <span>📷</span> Scanner Clipper
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="switchTab('clipper')">
+                <span>✂️</span> Scanner Clipper
+            </li>
+            <li class="nav-item" onclick="switchTab('resizer')">
+                <span>📐</span> Image Resizer
+            </li>
+            <li class="nav-item" onclick="switchTab('exif')">
+                <span>📅</span> EXIF Date Editor
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- 1. SCANNER CLIPPER TAB -->
+        <div id="tab-clipper" class="tab-content active">
+            <header>
+                <h1>Scanner Clipper</h1>
+                <p>Detect, extract, and auto-crop individual photos from flatbed scanner batch sheets.</p>
+            </header>
+
+            <div class="panel">
+                <h3 class="panel-title">Configuration</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Input Folder (Scans)</label>
+                        <div class="input-row">
+                            <input type="text" id="clipper-input" value="input">
+                            <button class="btn btn-secondary" onclick="openFileBrowser('clipper-input')">Browse</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Output Folder (Extracted)</label>
+                        <div class="input-row">
+                            <input type="text" id="clipper-output" value="output">
+                            <button class="btn btn-secondary" onclick="openFileBrowser('clipper-output')">Browse</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Edge Shave (Pixels)</label>
+                        <input type="number" id="clipper-shave" value="10" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Grayscale Threshold (0-255)</label>
+                        <input type="number" id="clipper-threshold" value="240" min="10" max="255">
+                    </div>
+                    <div class="form-group">
+                        <label>Output Format</label>
+                        <select id="clipper-format">
+                            <option value="webp" selected>WebP</option>
+                            <option value="jpg">JPEG</option>
+                            <option value="png">PNG</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Quality (0-100)</label>
+                        <input type="number" id="clipper-quality" value="90" min="10" max="100">
+                    </div>
+                    <div class="form-group" style="justify-content: center; padding-top: 10px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="clipper-debug">
+                            Save diagnostic masks (Debug Mode)
+                        </label>
+                    </div>
+                    <div class="form-group" style="justify-content: flex-end; align-items: flex-end; padding-top: 10px;">
+                        <button class="btn" id="btn-run-clipper" onclick="runClipper()">Run Clipper</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. IMAGE RESIZER TAB -->
+        <div id="tab-resizer" class="tab-content">
+            <header>
+                <h1>Image Resizer & Converter</h1>
+                <p>Downsize and format images in bulk for digital picture frames or fast sharing.</p>
+            </header>
+
+            <div class="panel">
+                <h3 class="panel-title">Configuration</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Input Folder</label>
+                        <div class="input-row">
+                            <input type="text" id="resizer-input" value="output">
+                            <button class="btn btn-secondary" onclick="openFileBrowser('resizer-input')">Browse</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Output Folder</label>
+                        <div class="input-row">
+                            <input type="text" id="resizer-output" value="downsized">
+                            <button class="btn btn-secondary" onclick="openFileBrowser('resizer-output')">Browse</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Resizing Mode</label>
+                        <select id="resizer-mode" onchange="toggleResizerInputs()">
+                            <option value="scale" selected>Scale Factor</option>
+                            <option value="max-dim">Limit Maximum Dimension (px)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="resizer-scale-group">
+                        <label>Scale Factor (e.g. 0.5 for 50%)</label>
+                        <input type="text" id="resizer-scale" value="0.5">
+                    </div>
+                    <div class="form-group" id="resizer-max-dim-group" style="display:none;">
+                        <label>Max Side Constraint (pixels)</label>
+                        <input type="number" id="resizer-max-dim" value="1920" min="100">
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Output Format</label>
+                        <select id="resizer-format">
+                            <option value="jpg" selected>JPEG</option>
+                            <option value="webp">WebP</option>
+                            <option value="png">PNG</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quality (0-100)</label>
+                        <input type="number" id="resizer-quality" value="90" min="10" max="100">
+                    </div>
+                    <div class="form-group" style="justify-content: center; padding-top: 10px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="resizer-recursive" checked>
+                            Process folder recursively
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                    <button class="btn" id="btn-run-resizer" onclick="runResizer()">Run Resizer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. EXIF DATE EDITOR TAB -->
+        <div id="tab-exif" class="tab-content">
+            <header>
+                <h1>EXIF Date Editor</h1>
+                <p>Bulk edit metadata to add or change the original 'Date Taken' field on photos.</p>
+            </header>
+
+            <div class="panel">
+                <h3 class="panel-title">Dating Modes</h3>
+                <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+                    <button class="btn btn-secondary active" id="btn-exif-mode-bulk" onclick="setExifMode('bulk')">Direct Bulk Update</button>
+                    <button class="btn btn-secondary" id="btn-exif-mode-interactive" onclick="setExifMode('interactive')">Visual Walkthrough Mode</button>
+                </div>
+
+                <!-- EXIF Configuration Inputs -->
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Input Folder</label>
+                        <div class="input-row">
+                            <input type="text" id="exif-input" value="output">
+                            <button class="btn btn-secondary" onclick="openFileBrowser('exif-input')">Browse</button>
+                        </div>
+                    </div>
+                    <div class="form-group" id="exif-output-group">
+                        <label>Output Folder (Optional)</label>
+                        <div class="input-row">
+                            <input type="text" id="exif-output" placeholder="Leave empty to update in-place">
+                            <button class="btn btn-secondary" onclick="openFileBrowser('exif-output')">Browse</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid" id="exif-date-row">
+                    <div class="form-group">
+                        <label>Date to Apply</label>
+                        <input type="text" id="exif-date" placeholder="e.g. 1995-08, August 1995, 1995-08-15">
+                    </div>
+                    <div class="form-group">
+                        <label>Save Quality (0-100)</label>
+                        <input type="number" id="exif-quality" value="95" min="10" max="100">
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Sequential Time Increment (Seconds)</label>
+                        <input type="number" id="exif-increment" value="60" min="0">
+                    </div>
+                    <div class="form-group" style="justify-content: center; padding-top: 10px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="exif-random-time">
+                            Randomize starting hour (Daylight)
+                        </label>
+                    </div>
+                    <div class="form-group" style="justify-content: center; padding-top: 10px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="exif-dry-run">
+                            Dry Run (Test without writing)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Direct Bulk Button -->
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px;" id="exif-bulk-action">
+                    <button class="btn" id="btn-run-exif" onclick="runExifBulk()">Apply Dates in Bulk</button>
+                </div>
+
+                <!-- Interactive Walkthrough Setup -->
+                <div style="display: none; justify-content: flex-end; margin-top: 10px;" id="exif-interactive-setup">
+                    <button class="btn btn-success" id="btn-start-walkthrough" onclick="startWalkthrough()">Start Visual Walkthrough</button>
+                </div>
+
+                <!-- Interactive Visual UI Panel -->
+                <div id="exif-interactive-ui" style="display: none; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                    <h3 class="panel-title" style="border: none; padding: 0; font-size: 1rem; color: var(--accent);">Interactive Walkthrough:</h3>
+                    
+                    <div class="exif-interactive-layout" style="margin-top: 16px;">
+                        <div class="preview-panel">
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">Images in current folder:</p>
+                            <div class="preview-grid" id="walkthrough-grid">
+                                <!-- Previews will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="interactive-sidebar">
+                            <div class="interactive-details">
+                                <h4 id="walkthrough-folder-name">Folder Name</h4>
+                                <p id="walkthrough-folder-count">0 photo(s) found</p>
+                                <p style="font-size: 0.75rem; color: var(--text-muted);">
+                                    Enter a date for this album folder. We will apply dates sequentially (incrementing by <span id="walkthrough-inc-val">60</span>s per image).
+                                </p>
+                                <div class="form-group" style="margin-top: 12px;">
+                                    <label>Album Date</label>
+                                    <input type="text" id="walkthrough-date-input" placeholder="e.g. 1995-08, August 1995" style="width: 100%;">
+                                </div>
+                            </div>
+                            <div class="interactive-controls">
+                                <button class="btn" onclick="applyWalkthroughStep()">Apply & Next</button>
+                                <button class="btn btn-secondary" onclick="skipWalkthroughStep()">Skip Folder</button>
+                                <button class="btn btn-secondary" onclick="stopWalkthrough()" style="color: var(--error); border-color: rgba(255,23,68,0.2);">End Walkthrough</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONSOLE LOGGER TERMINAL -->
+        <div class="console-panel">
+            <div class="console-header">
+                <div class="console-title">
+                    <div class="console-dot id="console-indicator" class="console-dot idle"></div>
+                    Execution Console
+                </div>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 4px;" onclick="clearConsole()">Clear Logs</button>
+            </div>
+            <div class="console-body" id="console-output">Console ready. Click a run command above to start processing...</div>
+        </div>
+    </div>
+
+    <!-- Directory Explorer Modal -->
+    <div class="explorer-overlay" id="file-explorer">
+        <div class="explorer-modal">
+            <div class="explorer-header">
+                <h3>Select Directory</h3>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="closeFileBrowser()">Close</button>
+            </div>
+            <div class="explorer-body">
+                <div class="explorer-path" id="explorer-current-path">/</div>
+                <ul class="explorer-list" id="explorer-items-list">
+                    <!-- Filesystem items will be listed here -->
+                </ul>
+            </div>
+            <div class="explorer-footer">
+                <button class="btn btn-secondary" onclick="closeFileBrowser()">Cancel</button>
+                <button class="btn btn-success" onclick="selectCurrentFolder()">Select Folder</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activeTab = 'clipper';
+        let currentBrowserTargetId = '';
+        let currentBrowserPath = '.';
+        
+        // Interactive walkthrough state
+        let walkthroughFolders = [];
+        let walkthroughIndex = 0;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Activate clicked
+            const elementIndex = { 'clipper': 0, 'resizer': 1, 'exif': 2 }[tabId];
+            document.querySelectorAll('.nav-item')[elementIndex].classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            activeTab = tabId;
+        }
+
+        function toggleResizerInputs() {
+            const mode = document.getElementById('resizer-mode').value;
+            if (mode === 'scale') {
+                document.getElementById('resizer-scale-group').style.display = 'flex';
+                document.getElementById('resizer-max-dim-group').style.display = 'none';
+            } else {
+                document.getElementById('resizer-scale-group').style.display = 'none';
+                document.getElementById('resizer-max-dim-group').style.display = 'flex';
+            }
+        }
+
+        function setExifMode(mode) {
+            document.getElementById('btn-exif-mode-bulk').classList.remove('active');
+            document.getElementById('btn-exif-mode-interactive').classList.remove('active');
+            
+            if (mode === 'bulk') {
+                document.getElementById('btn-exif-mode-bulk').classList.add('active');
+                document.getElementById('exif-date-row').style.display = 'grid';
+                document.getElementById('exif-bulk-action').style.display = 'flex';
+                document.getElementById('exif-interactive-setup').style.display = 'none';
+                document.getElementById('exif-interactive-ui').style.display = 'none';
+            } else {
+                document.getElementById('btn-exif-mode-interactive').classList.add('active');
+                document.getElementById('exif-date-row').style.display = 'none';
+                document.getElementById('exif-bulk-action').style.display = 'none';
+                document.getElementById('exif-interactive-setup').style.display = 'flex';
+            }
+        }
+
+        // Folder tree browser functionality
+        function openFileBrowser(targetInputId) {
+            currentBrowserTargetId = targetInputId;
+            const currentVal = document.getElementById(targetInputId).value;
+            currentBrowserPath = currentVal || '.';
+            
+            document.getElementById('file-explorer').style.display = 'flex';
+            loadFolderContents(currentBrowserPath);
+        }
+
+        function closeFileBrowser() {
+            document.getElementById('file-explorer').style.display = 'none';
+        }
+
+        function loadFolderContents(path) {
+            fetch(`/api/browse?path=${encodeURIComponent(path)}`)
+                .then(res => res.json())
+                .then(data => {
+                    currentBrowserPath = data.current_path;
+                    document.getElementById('explorer-current-path').textContent = data.current_path;
+                    
+                    const list = document.getElementById('explorer-items-list');
+                    list.innerHTML = '';
+                    
+                    // Add parent directory item
+                    if (data.parent) {
+                        const li = document.createElement('li');
+                        li.className = 'explorer-item directory';
+                        li.innerHTML = '📁 <strong>..</strong> <em>(parent folder)</em>';
+                        li.onclick = () => loadFolderContents(data.parent);
+                        list.appendChild(li);
+                    }
+                    
+                    // List folders
+                    data.directories.forEach(dir => {
+                        const li = document.createElement('li');
+                        li.className = 'explorer-item directory';
+                        li.innerHTML = `📁 ${dir.name}`;
+                        li.onclick = () => loadFolderContents(dir.path);
+                        list.appendChild(li);
+                    });
+
+                    // List files
+                    data.files.forEach(file => {
+                        const li = document.createElement('li');
+                        li.className = 'explorer-item file';
+                        li.innerHTML = `📄 ${file.name} <span style="font-size:0.75rem; color:var(--text-muted);">(${formatBytes(file.size)})</span>`;
+                        list.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    alert('Error reading folder: ' + err);
+                });
+        }
+
+        function selectCurrentFolder() {
+            document.getElementById(currentBrowserTargetId).value = currentBrowserPath;
+            closeFileBrowser();
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Output and Log handling
+        let eventSource = null;
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '';
+        }
+
+        function writeLog(text, type = '') {
+            const consoleOutput = document.getElementById('console-output');
+            const span = document.createElement('span');
+            span.className = type ? `log-${type}` : '';
+            span.textContent = text;
+            consoleOutput.appendChild(span);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        function startStreamingLogs(taskId) {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            document.querySelector('.console-dot').classList.remove('idle');
+            clearConsole();
+            writeLog(`Task initiated (ID: ${taskId}). Connecting standard output...\n`, 'info');
+
+            eventSource = new EventSource(`/api/logs?task_id=${taskId}`);
+            
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.done) {
+                    writeLog(`\nProcess completed with status: ${data.status}\n`, data.status === 'success' ? 'success' : 'error');
+                    eventSource.close();
+                    document.querySelector('.console-dot').classList.add('idle');
+                    enableButtons(true);
+                } else {
+                    let logType = '';
+                    if (data.line.includes('ERROR') || data.line.includes('Error:')) logType = 'error';
+                    else if (data.line.includes('Saved:') || data.line.includes('Done!')) logType = 'success';
+                    else if (data.line.includes('Processing:')) logType = 'info';
+                    
+                    writeLog(data.line + '\n', logType);
+                }
+            };
+
+            eventSource.onerror = function() {
+                writeLog('\n[Network Connection closed or disconnected]\n', 'error');
+                eventSource.close();
+                document.querySelector('.console-dot').classList.add('idle');
+                enableButtons(true);
+            };
+        }
+
+        function enableButtons(enabled) {
+            const btns = ['btn-run-clipper', 'btn-run-resizer', 'btn-run-exif', 'btn-start-walkthrough'];
+            btns.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.disabled = !enabled;
+                    btn.style.opacity = enabled ? '1' : '0.5';
+                }
+            });
+        }
+
+        // TOOL RUN FUNCTIONS
+        function runClipper() {
+            enableButtons(false);
+            const payload = {
+                input: document.getElementById('clipper-input').value,
+                output: document.getElementById('clipper-output').value,
+                shave: parseInt(document.getElementById('clipper-shave').value),
+                threshold: parseInt(document.getElementById('clipper-threshold').value),
+                format: document.getElementById('clipper-format').value,
+                quality: parseInt(document.getElementById('clipper-quality').value),
+                debug: document.getElementById('clipper-debug').checked
+            };
+
+            fetch('/api/run/clipper', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.task_id) {
+                    startStreamingLogs(data.task_id);
+                } else {
+                    writeLog('Error: ' + data.error + '\n', 'error');
+                    enableButtons(true);
+                }
+            })
+            .catch(err => {
+                writeLog('Failed to connect to backend: ' + err + '\n', 'error');
+                enableButtons(true);
+            });
+        }
+
+        function runResizer() {
+            enableButtons(false);
+            const mode = document.getElementById('resizer-mode').value;
+            const payload = {
+                input: document.getElementById('resizer-input').value,
+                output: document.getElementById('resizer-output').value,
+                format: document.getElementById('resizer-format').value,
+                quality: parseInt(document.getElementById('quality') ? document.getElementById('quality').value : document.getElementById('resizer-quality').value),
+                recursive: document.getElementById('resizer-recursive').checked
+            };
+
+            if (mode === 'scale') {
+                payload.scale = parseFloat(document.getElementById('resizer-scale').value);
+            } else {
+                payload.max_dim = parseInt(document.getElementById('resizer-max-dim').value);
+            }
+
+            fetch('/api/run/resizer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.task_id) {
+                    startStreamingLogs(data.task_id);
+                } else {
+                    writeLog('Error: ' + data.error + '\n', 'error');
+                    enableButtons(true);
+                }
+            })
+            .catch(err => {
+                writeLog('Failed to connect to backend: ' + err + '\n', 'error');
+                enableButtons(true);
+            });
+        }
+
+        function runExifBulk() {
+            enableButtons(false);
+            const payload = {
+                input: document.getElementById('exif-input').value,
+                output: document.getElementById('exif-output').value,
+                date: document.getElementById('exif-date').value,
+                quality: parseInt(document.getElementById('exif-quality').value),
+                increment: parseInt(document.getElementById('exif-increment').value),
+                random_time: document.getElementById('exif-random-time').checked,
+                dry_run: document.getElementById('exif-dry-run').checked
+            };
+
+            fetch('/api/run/exif', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.task_id) {
+                    startStreamingLogs(data.task_id);
+                } else {
+                    writeLog('Error: ' + data.error + '\n', 'error');
+                    enableButtons(true);
+                }
+            })
+            .catch(err => {
+                writeLog('Failed to connect to backend: ' + err + '\n', 'error');
+                enableButtons(true);
+            });
+        }
+
+        // INTERACTIVE EXIF WALKTHROUGH MANAGEMENT
+        function startWalkthrough() {
+            const inputPath = document.getElementById('exif-input').value;
+            writeLog(`Initiating interactive walk in: ${inputPath}...\n`, 'info');
+            
+            fetch(`/api/interactive-exif/folders?path=${encodeURIComponent(inputPath)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        writeLog(`Error scanning directories: ${data.error}\n`, 'error');
+                        return;
+                    }
+                    
+                    walkthroughFolders = data.folders;
+                    walkthroughIndex = 0;
+                    
+                    if (walkthroughFolders.length === 0) {
+                        writeLog('No directories containing photos were found.\n', 'error');
+                        alert('No directories containing photos were found under the selected folder.');
+                        return;
+                    }
+                    
+                    document.getElementById('exif-interactive-ui').style.display = 'block';
+                    document.getElementById('walkthrough-inc-val').textContent = document.getElementById('exif-increment').value;
+                    showWalkthroughStep();
+                })
+                .catch(err => {
+                    writeLog(`Walkthrough failed to start: ${err}\n`, 'error');
+                });
+        }
+
+        function showWalkthroughStep() {
+            if (walkthroughIndex >= walkthroughFolders.length) {
+                writeLog('\nAll directories processed! Walkthrough ended successfully.\n', 'success');
+                alert('All folders processed! Walkthrough completed.');
+                stopWalkthrough();
+                return;
+            }
+
+            const current = walkthroughFolders[walkthroughIndex];
+            document.getElementById('walkthrough-folder-name').textContent = current.display_name;
+            document.getElementById('walkthrough-folder-count').textContent = `${current.images.length} photo(s) found`;
+            document.getElementById('walkthrough-date-input').value = '';
+            document.getElementById('walkthrough-date-input').focus();
+
+            // Populate images preview grid
+            const grid = document.getElementById('walkthrough-grid');
+            grid.innerHTML = '';
+            
+            current.images.forEach(img => {
+                const card = document.createElement('div');
+                card.className = 'preview-card';
+                
+                const imageEl = document.createElement('img');
+                // Point image to local serve API
+                imageEl.src = `/api/image?path=${encodeURIComponent(img.path)}`;
+                imageEl.alt = img.name;
+                imageEl.loading = 'lazy';
+                
+                card.appendChild(imageEl);
+                grid.appendChild(card);
+            });
+            
+            writeLog(`[Interactive] Loaded folder ${walkthroughIndex + 1}/${walkthroughFolders.length}: '${current.display_name}'\n`, 'info');
+        }
+
+        function applyWalkthroughStep() {
+            const dateVal = document.getElementById('walkthrough-date-input').value.trim();
+            if (!dateVal) {
+                alert('Please enter a date or click Skip.');
+                return;
+            }
+
+            const current = walkthroughFolders[walkthroughIndex];
+            const payload = {
+                input: current.path,
+                output: document.getElementById('exif-output').value,
+                date: dateVal,
+                quality: parseInt(document.getElementById('exif-quality').value),
+                increment: parseInt(document.getElementById('exif-increment').value),
+                random_time: document.getElementById('exif-random-time').checked,
+                dry_run: document.getElementById('exif-dry-run').checked
+            };
+
+            writeLog(`[Interactive] Applying date '${dateVal}' to '${current.display_name}'...\n`, 'info');
+            enableButtons(false);
+
+            fetch('/api/run/exif', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.task_id) {
+                    // We run it synchronously or capture it via simple polling/completion.
+                    // To keep UI fluid, let's connect the logs and advance walkthrough Index after logs finish!
+                    // Let's customize startStreamingLogs to take an optional callback
+                    customStartStreamingLogs(data.task_id, () => {
+                        enableButtons(true);
+                        walkthroughIndex++;
+                        showWalkthroughStep();
+                    });
+                } else {
+                    writeLog(`Error applying date: ${data.error}\n`, 'error');
+                    enableButtons(true);
+                }
+            })
+            .catch(err => {
+                writeLog(`Error connecting: ${err}\n`, 'error');
+                enableButtons(true);
+            });
+        }
+
+        function skipWalkthroughStep() {
+            const current = walkthroughFolders[walkthroughIndex];
+            writeLog(`[Interactive] Skipped folder: '${current.display_name}'\n`, 'info');
+            walkthroughIndex++;
+            showWalkthroughStep();
+        }
+
+        function stopWalkthrough() {
+            document.getElementById('exif-interactive-ui').style.display = 'none';
+            walkthroughFolders = [];
+            walkthroughIndex = 0;
+            writeLog('Walkthrough closed.\n', 'info');
+        }
+
+        // Custom streamer callback for interactive steps
+        function customStartStreamingLogs(taskId, onCompleteCallback) {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            document.querySelector('.console-dot').classList.remove('idle');
+            eventSource = new EventSource(`/api/logs?task_id=${taskId}`);
+            
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.done) {
+                    writeLog(`Updated ${data.status === 'success' ? 'successfully' : 'with errors'}\n`, data.status === 'success' ? 'success' : 'error');
+                    eventSource.close();
+                    document.querySelector('.console-dot').classList.add('idle');
+                    if (onCompleteCallback) onCompleteCallback();
+                } else {
+                    let logType = '';
+                    if (data.line.includes('ERROR') || data.line.includes('Error:')) logType = 'error';
+                    else if (data.line.includes('Saved:') || data.line.includes('Updated:')) logType = 'success';
+                    writeLog('  ' + data.line + '\n', logType);
+                }
+            };
+
+            eventSource.onerror = function() {
+                eventSource.close();
+                document.querySelector('.console-dot').classList.add('idle');
+                if (onCompleteCallback) onCompleteCallback();
+            };
+        }
+    </script>
+</body>
+</html>
