@@ -58,14 +58,14 @@ jobs:
 
       - name: Upload Build Artifacts (macOS)
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os-name }}-binary
           path: PhotoUtils-macOS.zip
 
       - name: Upload Build Artifacts (Linux / Windows)
         if: matrix.os != 'macos-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os-name }}-binary
           path: dist/${{ matrix.artifact-name }}
