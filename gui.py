@@ -490,11 +490,32 @@ class PhotoUtilitiesApp:
         self.clipper_quality = StyledEntry(settings_frame, width=8)
         self.clipper_quality.insert(0, "90")
         self.clipper_quality.grid(row=1, column=3, sticky="w", pady=5)
-        
-        # Diagnostic Checkbox
+
+        tk.Label(settings_frame, text="Date Imprint Format:", fg=COLOR_TEXT, bg=BG_PANEL).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=5)
+        self.clipper_date_format = ttk.Combobox(settings_frame, values=["auto", "YY-MM-DD", "MM-DD-YY", "DD-MM-YY", "YY-DD-MM"], width=10, state="readonly")
+        self.clipper_date_format.set("auto")
+        self.clipper_date_format.grid(row=2, column=1, sticky="w", pady=5)
+
+        # Date Detection & Diagnostic Checkboxes
+        checkbox_frame = tk.Frame(card, bg=BG_PANEL)
+        checkbox_frame.grid(row=6, column=0, columnspan=3, sticky="w", pady=10)
+
+        self.clipper_detect_dates_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(
+            checkbox_frame,
+            text="Detect camera date imprints & embed into EXIF metadata",
+            variable=self.clipper_detect_dates_var,
+            fg=COLOR_TEXT,
+            bg=BG_PANEL,
+            activebackground=BG_PANEL,
+            activeforeground=COLOR_TEXT,
+            selectcolor=BG_DARK,
+            relief="flat"
+        ).pack(anchor="w", pady=(0, 4))
+
         self.clipper_debug_var = tk.BooleanVar(value=False)
         tk.Checkbutton(
-            card,
+            checkbox_frame,
             text="Save diagnostic masks (Debug Mode)",
             variable=self.clipper_debug_var,
             fg=COLOR_TEXT,
@@ -503,7 +524,7 @@ class PhotoUtilitiesApp:
             activeforeground=COLOR_TEXT,
             selectcolor=BG_DARK,
             relief="flat"
-        ).grid(row=6, column=0, columnspan=3, sticky="w", pady=10)
+        ).pack(anchor="w")
         
         # Run Button
         self.btn_run_clipper = StyledButton(card, "Run Clipper", self.run_clipper, variant="primary")
@@ -519,10 +540,16 @@ class PhotoUtilitiesApp:
         fmt = self.clipper_format.get().strip()
         quality = self.clipper_quality.get().strip()
         debug = self.clipper_debug_var.get()
+        detect_dates = self.clipper_detect_dates_var.get()
+        date_format = self.clipper_date_format.get().strip()
         
         args = ["-i", inp, "-o", out, "--shave", shave, "--threshold", threshold, "-f", fmt, "-q", quality]
         if debug:
             args.append("--debug")
+        if detect_dates:
+            args.append("--detect-dates")
+            if date_format:
+                args.extend(["--date-format", date_format])
             
         self.is_running = True
         self.update_status_indicator("Running Clipper", COLOR_ACCENT)

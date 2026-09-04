@@ -211,15 +211,27 @@ def detect_photos(image_path: str, debug: bool = False, shave_px: int = SHAVE_PX
     # Apply Gaussian blur to reduce noise
     blurred = cv2.GaussianBlur(gray, (BLUR_KERNEL, BLUR_KERNEL), 0)
 
-    # --- Method 1: Adaptive threshold to separate photos from white background ---
-    # The scanner background is white, photos are generally darker
-    # Use Otsu's thresholding to find the separation
-    _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # --- Method 1: Background-adaptive threshold to separate photos from scanner bed ---
+    # Sample border pixels to estimate the scanner bed brightness
+    border_pixels = np.concatenate([
+        blurred[0:15, :].flatten(),
+        blurred[-15:, :].flatten(),
+        blurred[:, 0:15].flatten(),
+        blurred[:, -15:].flatten()
+    ])
+    bg_median = float(np.median(border_pixels))
+
+    # If the scanner bed is bright (>= 200), threshold relative to the bed to prevent
+    # light areas within photos (e.g. white pathways, snow, bright skies) from splitting the photo.
+    if bg_median >= 200:
+        thresh_val = max(180, bg_median - 18)
+        _, thresh = cv2.threshold(blurred, thresh_val, 255, cv2.THRESH_BINARY_INV)
+    else:
+        _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
     # Morphological operations to clean up the mask
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE))
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=DILATE_ITERATIONS)
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
 
     # --- Method 2: Canny edge detection for backup ---
     edges = cv2.Canny(blurred, CANNY_LOW, CANNY_HIGH)
@@ -230,8 +242,8 @@ def detect_photos(image_path: str, debug: bool = False, shave_px: int = SHAVE_PX
     combined = cv2.bitwise_or(thresh, edges_closed)
 
     # Additional closing to fill gaps
-    large_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
-    combined = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, large_kernel, iterations=3)
+    large_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (13, 13))
+    combined = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, large_kernel, iterations=2)
 
     if debug:
         debug_dir = Path(image_path).parent.parent / "debug"
@@ -306,7 +318,8 @@ def detect_photos(image_path: str, debug: bool = False, shave_px: int = SHAVE_PX
 def process_images(image_files: list[Path], output_path: Path, prefix: str = None,
                    debug: bool = False, shave_px: int = SHAVE_PX, 
                    threshold: int = TRIM_THRESHOLD, quality: int = OUTPUT_QUALITY, 
-                   output_format: str = OUTPUT_FORMAT) -> int:
+                   output_format: str = OUTPUT_FORMAT,
+                   detect_dates: bool = False, date_format: str = "auto") -> int:
     """
     Process a list of image files and save results to output_path.
     
@@ -352,6 +365,15 @@ def process_images(image_files: list[Path], output_path: Path, prefix: str = Non
             cv2.imwrite(str(out_path), photo, params)
             ph, pw = photo.shape[:2]
             print(f"  Saved: {out_name} ({pw}x{ph})")
+
+            if detect_dates:
+                from date_imprint_detector import apply_date_to_image_exif
+                res = apply_date_to_image_exif(out_path, date_format=date_format, verbose=debug)
+                if res and res.get("exif_written"):
+                    print(f"    Date imprint detected: {res['formatted']} ({res['corner']}, rot {res['rotation']}deg, conf {res['confidence']:.2f}) -> Embedded to EXIF")
+                else:
+                    print("    No date imprint detected")
+
             total_extracted += 1
             
     return total_extracted
@@ -359,7 +381,8 @@ def process_images(image_files: list[Path], output_path: Path, prefix: str = Non
 
 def process_folder(input_dir: str, output_dir: str, debug: bool = False, 
                    shave_px: int = SHAVE_PX, threshold: int = TRIM_THRESHOLD,
-                   quality: int = OUTPUT_QUALITY, output_format: str = OUTPUT_FORMAT) -> None:
+                   quality: int = OUTPUT_QUALITY, output_format: str = OUTPUT_FORMAT,
+                   detect_dates: bool = False, date_format: str = "auto") -> None:
     """Process all images and zip files in the input directory."""
     input_path = Path(input_dir)
     output_path = Path(output_dir)
@@ -391,7 +414,7 @@ def process_folder(input_dir: str, output_dir: str, debug: bool = False,
     # Process standalone images
     if image_files:
         print(f"Processing {len(image_files)} standalone images...")
-        total_extracted += process_images(image_files, output_path, None, debug, shave_px, threshold, quality, output_format)
+        total_extracted += process_images(image_files, output_path, None, debug, shave_px, threshold, quality, output_format, detect_dates=detect_dates, date_format=date_format)
 
     # Process zip files
     for zip_file in zip_files:
@@ -428,7 +451,8 @@ def process_folder(input_dir: str, output_dir: str, debug: bool = False,
                 print(f"Found {len(extracted_images)} image(s) in {zip_file.name}")
                 # Use the zip filename (stem) as prefix to disregard internal filenames
                 total_extracted += process_images(extracted_images, zip_output_path, zip_file.stem, 
-                                                 debug, shave_px, threshold, quality, output_format)
+                                                 debug, shave_px, threshold, quality, output_format,
+                                                 detect_dates=detect_dates, date_format=date_format)
             else:
                 print(f"No supported images found in {zip_file.name}")
 
@@ -487,6 +511,17 @@ Examples:
         choices=["webp", "jpg", "png"],
         help=f"Output format (default: {OUTPUT_FORMAT})"
     )
+    parser.add_argument(
+        "--detect-dates",
+        action="store_true",
+        help="Scan photo corners for camera date imprints using OCR and embed into EXIF metadata"
+    )
+    parser.add_argument(
+        "--date-format",
+        default="auto",
+        choices=["auto", "YY-MM-DD", "MM-DD-YY", "DD-MM-YY", "YY-DD-MM"],
+        help="Expected date imprint format: auto (default), YY-MM-DD, MM-DD-YY, DD-MM-YY, YY-DD-MM"
+    )
 
     args = parser.parse_args()
 
@@ -511,7 +546,9 @@ Examples:
         shave_px=args.shave,
         threshold=args.threshold,
         quality=args.quality,
-        output_format=args.format
+        output_format=args.format,
+        detect_dates=args.detect_dates,
+        date_format=args.date_format
     )
 
 
