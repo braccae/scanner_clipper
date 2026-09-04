@@ -40,18 +40,14 @@ jobs:
           python-version: '3.12' # Use a highly stable Python version for PyInstaller compatibility
           activate-environment: true
 
-      - name: Install CPU-only PyTorch (Linux & Windows)
-        if: matrix.os != 'macos-latest'
-        run: uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
-          uv pip install .
+          uv sync --frozen
           uv pip install pyinstaller
 
       - name: Build Standalone Executable
         run: |
-          uv run pyinstaller --onefile --windowed --name "${{ matrix.artifact-name }}" desktop_app.py
+          uv run --no-sync pyinstaller --onefile --windowed --name "${{ matrix.artifact-name }}" desktop_app.py
 
       - name: Package macOS App Bundle (macOS)
         if: matrix.os == 'macos-latest'
